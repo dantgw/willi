@@ -69,7 +69,7 @@ forge test -vvv
 A deployment script can be found in the `scripts/` folder
 
 ```bash
-forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast
+forge script script/Deploy.s.sol --rpc-url  --broadcast --private-key 
 ```
 
 ## Security and audits
