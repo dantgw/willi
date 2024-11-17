@@ -32,6 +32,7 @@ contract WillTest is Test {
     address public beneficiary;
     uint256 public constant INITIAL_BALANCE = 100 ether;
     uint256 public constant INITIAL_TOKENS = 1000e18;
+    uint256 public constant PROOF_OF_LIFE_PERIOD = 365 days;
 
     event SmartAccountSet(address indexed smartAccount);
     event FundsWithdrawn(address indexed to, uint256 amount);
@@ -44,12 +45,12 @@ contract WillTest is Test {
         
         // Deploy contracts
         vm.startPrank(owner);
-        will = new Will();
         modularAccount = new MockModularAccount(address(will));
-        token = new MockERC20("Test Token", "TEST");
         
-        // Setup modular account
-        will.setSmartAccount(address(modularAccount));
+        // Deploy will with constructor arguments
+        will = new Will(address(modularAccount));
+        
+        token = new MockERC20("Test Token", "TEST");
         
         // Fund modular account
         vm.deal(address(modularAccount), INITIAL_BALANCE);
@@ -182,6 +183,25 @@ contract WillTest is Test {
         assertTrue(modularAccount.isOwner(beneficiary));
         assertTrue(modularAccount.isOwner(beneficiary2));
         assertFalse(modularAccount.isOwner(address(will)));
+    }
+
+    function test_constructorArguments() public {
+        address testSmartAccount = makeAddr("testSmartAccount");
+
+        Will newWill = new Will(testSmartAccount);
+
+        assertEq(newWill.getSmartAccount(), testSmartAccount);
+        assertEq(newWill.proofOfLifePeriod(), 90 days);
+        assertEq(newWill.getBeneficiaries().length, 0);
+    }
+
+    function test_constructorRejectsZeroAddress() public {
+        address[] memory testBeneficiaries = new address[](0);
+        
+        vm.expectRevert("Will: invalid smart account address");
+        new Will(
+            address(0)
+        );
     }
 
 }

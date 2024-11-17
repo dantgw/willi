@@ -42,10 +42,18 @@ contract Will is Ownable, Pausable, ReentrancyGuard {
         _;
     }
 
-    constructor(address _smartAccount) Ownable() {
-        lastActiveTime = block.timestamp;
-        proofOfLifePeriod = 365 days;
+    // constructor() Ownable() {
+    //     lastActiveTime = block.timestamp;
+    //     proofOfLifePeriod = 365 days;
+    // }
+
+    constructor(
+        address _smartAccount
+    ) Ownable() {
+        require(_smartAccount != address(0), "Will: invalid smart account address");
         smartAccount = _smartAccount;
+        proofOfLifePeriod = 90 days;
+        lastActiveTime = block.timestamp;
     }
 
     function setPeriod(uint256 newPeriod) public onlyOwner {
@@ -104,27 +112,27 @@ contract Will is Ownable, Pausable, ReentrancyGuard {
         emit AccountClaimed(beneficiaries);
     }
 
-    function adminTestClaimAccount() public nonReentrant whenNotPaused {
-        address[] memory emptyArray = new address[](0);
+    // function adminTestClaimAccount() public nonReentrant whenNotPaused {
+    //     address[] memory emptyArray = new address[](0);
 
-        // Update the function call to match the expected signature
-        (bool success, bytes memory data) =
-            smartAccount.call(abi.encodeWithSignature("updateOwners(address[],address[])", beneficiaries, emptyArray));
+    //     // Update the function call to match the expected signature
+    //     (bool success, bytes memory data) =
+    //         smartAccount.call(abi.encodeWithSignature("updateOwners(address[],address[])", beneficiaries, emptyArray));
 
-        if (!success) {
-            if (data.length > 0) {
-                assembly {
-                    let ptr := mload(0x40)
-                    let size := returndatasize()
-                    returndatacopy(ptr, 0, size)
-                    revert(ptr, size)
-                }
-            }
-            revert("Will: ownership transfer failed");
-        }
+    //     if (!success) {
+    //         if (data.length > 0) {
+    //             assembly {
+    //                 let ptr := mload(0x40)
+    //                 let size := returndatasize()
+    //                 returndatacopy(ptr, 0, size)
+    //                 revert(ptr, size)
+    //             }
+    //         }
+    //         revert("Will: ownership transfer failed");
+    //     }
 
-        emit AccountClaimed(beneficiaries);
-    }
+    //     emit AccountClaimed(beneficiaries);
+    // }
 
     /// @dev Pause the contract
     function pause() public onlyOwner {
@@ -178,5 +186,17 @@ contract Will is Ownable, Pausable, ReentrancyGuard {
     /// @return The smart account address
     function getSmartAccount() public view returns (address) {
         return smartAccount;
+    }
+
+    /// @notice Returns the exact timestamp when the will becomes executable
+    /// @return The timestamp (in seconds since unix epoch) when the will can be executed
+    function executionTime() public view returns (uint256) {
+        return lastActiveTime + proofOfLifePeriod;
+    }
+
+    /// @notice Returns the last time the owner proved they were alive
+    /// @return The timestamp (in seconds since unix epoch) of the last proof of life
+    function getLastActiveTime() public view returns (uint256) {
+        return lastActiveTime;
     }
 }
