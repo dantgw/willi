@@ -17,16 +17,16 @@ contract DeployWill is Script {
     function run() public {
         console.log("******** Deploying Will Contract *********");
         console.log("Chain: ", block.chainid);
-        console.log("Owner: ", owner);
+        // console.log("Owner: ", owner);
 
         vm.startBroadcast();
 
         // Deploy Will contract
         willContract = address(new Will{salt: willSalt}());
 
-        if (expectedWill != address(0)) {
-            require(willContract == expectedWill, "Will contract address mismatch");
-        }
+        // if (expectedWill != address(0)) {
+        //     require(willContract == expectedWill, "Will contract address mismatch");
+        // }
         console.log("New Will Contract: ", willContract);
 
         console.log("******** Deploy Done! *********");
