@@ -1,91 +1,23 @@
-# Multisig Plugin
+# Willi 
+Digital assets are gaining mainstream adoption, but not many people are thinking about ways to leave behind their digital assets for their loved ones. As a result, millions of cryptocurrency are stuck in wallets with no recovery mechanism. Willi is a solution for users to create wills for their digital assets, so that their relatives can claim their wallets should something untoward happen to the user.
 
-Multisig Plugin is an ERC6900-compatible k-of-n ownership plugin that supports both EOA and smart contract owners.
 
-## Overview
+# Overview
+The owner has a smart account with the assets deposited. The smart account is deployed when the owner signs in with an email and makes a transaction. We use the multiowner light account by the Alchemy account kit such that more owners can be added. 
 
-This repository contains:
-1. An ERC6900-compatible k-of-n Multisig Plugin
-2. A factory contract that deploys [Modular Account](https://github.com/alchemyplatform/modular-account)s with Multisig Plugin installed
+When the owner wants to create a will, it triggers the WillFactory.sol smart contract, which deploys a Will.sol smart contract. The smart account then adds the newly deployed Will.sol smart contract to it's owners.
 
-The plugin conforms to these ERC versions:
-- ERC-4337: [0.6.0](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.6/eip/EIPS/eip-4337.md)
-- ERC-6900: [0.7.0](https://github.com/erc6900/reference-implementation/blob/v0.7.x/standard/ERCs/erc-6900.md)
+The Will.sol smart contract stores the beneficiaries and controls the time in which the beneficiaries have the option to claim the smart account. The owner has to consistently send a transaction to prove that the owner is alive. If the owner does not send a transaction within the time frame, he is assumed to be dead, and any one of the beneficiaries can call the claimAccount transaction which adds the beneficiary's account as an owner. 
 
-## Core Functionalities
+# User Flow
 
-Multisig Plugin is an plugin that provides validation functions for a k-of-n ownership scheme. **Multisig validation only works in the user operation context.**
 
-Its core features include:
-1. Multisig user operation validation on native account functions (`installPlugin`, `uninstallPlugin`, `execute`, `executeBatch`, `upgradeToAndCall`).
-2. An execution function that modifies account ownership by adding or removing owners, and/or modifies the threshold. This is guarded by the above validation function.
-3. Support for ERC-1271 smart contract signatures based on the same multisig scheme.
-4. Variable gas feature that allows for more flexibility and control over gas spent.
 
-### Technical Decisions
+# Will Plugin
+We experimented with two ways to perform the in
+We have utilized the Alchemy Account Kit to do account abstraction.
 
-#### Multisig validation scheme is applied only for the User Operation context
-We expect multisig signers to implement key management best practices such as key rotation. By using the user operation path, keys can be used just for signing without needing to procure native tokens for gas. Like other ERC-4337 operations, the transaction would be paid for by the account or by a paymaster service.
+The first was the one described above.
 
-#### Variable gas feature
-User operations contain several gas/fee related fields - `preVerificationGas`, `maxFeePerGas` and `maxPriorityFeePerGas` - that specify the maximum fees that can be used for the user op. These fields (among others) are used to form the `userOpHash` which has to be signed over by the k signers. If collecting the k signatures takes too long, it's likely that network prices would have shifted. If the user op is overpriced, the account would end up overpaying for transaction inclusion. However, if the user op is underpriced, the bundler would reject the user op and the k signers have to re-sign this user operation.
-
-This multisig plugin includes a variable gas feature to address this problem. The fee values selected and signed over by the first k-1 signers are treated as a "maximum fee" and the k-th signer is able to choose final fee values to use based on the current network conditions. With this feature, there is no longer a risk of overpaying, or having to re-collect the k signatures.
-
-> [!NOTE] 
-> Since paymasters sign over the user op with max gas values, the variable gas feature is very likely incompatible with most ERC-4337 paymasters. 
-
-#### Multisig signature spec
-The multisig signature scheme has the following format:
-
-`k signatures` || `contract signatures (if any)`
-
-Each signature in the `k signatures` is sorted in ascending order by owner address, is 65 bytes long, uses packed encoding and has the following format:
-1. If it's an EOA signature, `signature = abi.encodePacked(r, s, v)`
-2. If it's a contract signature, it is also `abi.encodePacked(r, s, v)` with `v` set to 0, `r` set to the address of the contract owner expanded to 32 bytes, and `s` being the bytes offset of where the actual signature is located. This is relative to the starting location of `k signatures`. The actual contract signature has regular ABI encoding, appended after the `k signatures`.
-
-The above is the format for a ERC-1271 signature. For user operation signatures, prepend the signature above with the 3 gas values from the variable gas feature to form this full signature:  
-`uint256 upperLimitPreVerificationGas` || `uint256 upperLimitMaxFeePerGas` || `uint256 upperLimitMaxPriorityFeePerGas` || `k signatures` || `contract signatures (if any)`
-
-If the variable gas feature is used, the first k-1 signatures should sign over a user op with the upper limit gas values, and the k-th signature should sign over a user op with actual gas values. Additionally, the `v` value of the k-th signature should be incremented by 32 to denote that the signature is over the actual gas values. 
-
-## Development
-
-### Building and testing
-
-```bash
-# Build
-forge build
-
-# Lint
-pnpm lint
-
-# Test
-forge test -vvv
-```
-
-### Deployment
-
-A deployment script can be found in the `scripts/` folder
-
-```bash
-forge script script/Deploy.s.sol --rpc-url  --broadcast --private-key 
-```
-
-## Security and audits
-
-Our audit report from Quantstamp can be found in [audits](/audits).
-
-## Collaborators
-
-[<img src="https://assets-global.website-files.com/65d123ed4c76575a9e69648c/65db9e5db75bfd6e0a2a6065_maple-logo.png" alt="Maple Finance" height="32px">](https://maple.finance/)
-
-## Acknowledgements
-
-The signature verification logic takes inspiration from the work done by [Gnosis Safe](https://github.com/safe-global/safe-smart-account).
-
-## License
-
-The Multisig Plugin code is licensed under the GNU General Public License v3.0, also included in our repository in [LICENSE-GPL](LICENSE-GPL).
-
-Alchemy Insights, Inc., 548 Market St., PMB 49099, San Francisco, CA 94104; legal@alchemy.com
+The second is a will plugin which has not been tested.
+The Will Plugin is an experimental ERC6900-compatible plugin that tracks the time last active. It makes use of the preexecution hook to set the lastActiveTime so there is no need to call a specific alive transaction.
