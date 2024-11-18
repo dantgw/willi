@@ -9,12 +9,11 @@ When the owner wants to create a will, it triggers the WillFactory.sol smart con
 
 The Will.sol smart contract stores the beneficiaries and controls the time in which the beneficiaries have the option to claim the smart account. The owner has to consistently send a transaction to prove that the owner is alive. If the owner does not send a transaction within the time frame, he is assumed to be dead, and any one of the beneficiaries can call the claimAccount transaction which adds the beneficiary's account as an owner. 
 
-# User Flow
-
-
+# Relevant Files
+- Will.sol, WillFactory.sol, WillPlugin.sol, IWillPlugin.sol
 
 # Will Plugin
-We experimented with two ways to perform the in
+We experimented with two ways to perform the will.
 We have utilized the Alchemy Account Kit to do account abstraction.
 
 The first was the one described above.
